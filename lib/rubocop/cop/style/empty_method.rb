@@ -53,11 +53,11 @@ module RuboCop
 
         def on_def(node)
           return if node.body || processed_source.contains_comment?(node.source_range)
-          return if correct_style?(node)
+          return if correct_style?(node) || compact_style_disallowed?
 
           add_offense(node) do |corrector|
             correction = corrected(node)
-            next if compact_style? && max_line_length && correction.size > max_line_length
+            next if correction_exceeds_line_length?(correction)
 
             corrector.replace(node, correction)
           end
@@ -102,6 +102,15 @@ module RuboCop
 
         def compact_style?
           style == :compact
+        end
+
+        def compact_style_disallowed?
+          compact_style? &&
+            config.for_enabled_cop('Style/SingleLineMethods')['AllowIfMethodIsEmpty'] == false
+        end
+
+        def correction_exceeds_line_length?(correction)
+          compact_style? && max_line_length && correction.size > max_line_length
         end
 
         def expanded_style?
